@@ -126,6 +126,10 @@ void printare(header HEADER){
      }
 }
 
+//ce face optiunea de la parse? 
+// daca optiune==0 chiar face ceea ce ni se cere pentru parsare , inclusiv printarea de  mai sus
+// daca optiune==1 , inseamna ca functia va fi folosita , pt findAll , ceea ce inseamna ca  nu mai printeaza nimic si doar probeaza daca fiserul este sau nu binar
+
 int parse_function(const char *path,  header HEADER, int optiune){
     
     int fd = open(path, O_RDONLY); // nu scriem in el deci e mai usor asa 
@@ -224,6 +228,7 @@ for(int i=0;i<maxLength ;i++){
     else{
         if(c == '\r') {
             char c1=0;
+            i++;
             read(fd,&c1,1);
             if(c1=='\n')
             {
@@ -329,12 +334,14 @@ int extract_function(const char *path, int section , int line){
         //printf("%d %d %d",offset, i, HEADER.sectiuni[i].size);
         char line_string[HEADER.sectiuni[i].size];
         lseek(fd,0,SEEK_SET);
+        
         int zero = get_line(fd,line,line_string,HEADER.sectiuni[i].size,offset);
         if (zero < 0) {
         if(zero==-1)
         printf("ERROR\ninvalid line");
         if(zero==-2)
         printf("ERROR\ninvalid line");
+        break;
         //printf("S-a produs o eroare in timpul executieie problemei \n");
         
     }
