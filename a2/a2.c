@@ -16,10 +16,18 @@ typedef struct {
    
     sem_t *sem0;
 } TH_STRUCT_P6;
+//semafoare pt a doua cerinta
  sem_t sem2;
 sem_t sem3;
+//semafoare pt a patra cerinta
 sem_t *sem68_4;
 sem_t *sem86_24;
+//semafor pt a treia cerinta , cu nr permisiuni 3 astfel incat sa putem inchide threadul 15 cand 4 semafoare , cu tot cu el ruleaza
+sem_t sem3_15;
+int inceput=0;
+int contor=0;
+sem_t sem3_inceput;
+sem_t sem_fin;
 
 //pt prob 2
 void *threadFn(void *unused)
@@ -68,8 +76,42 @@ void *threadFn(void *unused)
 void *threadFn2(void *unused)
 {
     TH_STRUCT_P6 *s = (TH_STRUCT_P6*)unused;
+            sem_wait(s->sem0);
+            if(s->ID!=15){
+            
+           
             info(BEGIN, 3, s->ID);
+            sem_wait(&sem3_inceput);
+            if(inceput==1){sem_post(&sem3_15);
+            sem_wait(&sem_fin);
             info(END, 3, s->ID);
+            
+            sem_post(s->sem0);
+            }else
+            {info(END, 3, s->ID);
+            
+            sem_post(s->sem0);
+            }
+            sem_post(&sem3_inceput);
+            
+            }
+            if(s->ID==15){
+            info(BEGIN, 3, s->ID);
+            sem_wait(&sem3_inceput);
+            inceput=1;
+            sem_post(&sem3_inceput);
+            sem_wait(&sem3_15);
+            info(END, 3, s->ID);
+            
+            sem_post(&sem_fin);
+             sem_post(&sem_fin);
+              sem_post(&sem_fin);
+              sem_wait(&sem3_inceput);
+            inceput=0;
+            sem_post(&sem3_inceput);
+            sem_post(s->sem0);
+           //sem_post(&sem3_15);
+            }
             return NULL;
 }
 //pt ultima problema , doar face 
@@ -127,7 +169,7 @@ int main(){
                 perror("Could not init the semaphore");
                 return -1;
                 }
-                if(sem_init(&sem0, 0, 4) != 0) {
+                if(sem_init(&sem0, 0, 3) != 0) {
                  perror("Could not init the semaphore");
                 return -1;
                 }
@@ -189,6 +231,7 @@ int main(){
                 for(int i=0; i<NR_THREADS_P6; i++) {
                 pthread_join(tids[i], NULL);
                 }
+                sem_destroy(&sem0);
             info(BEGIN, 8, 0);
 
             info(END, 8, 0);
@@ -206,7 +249,19 @@ int main(){
         sem_t sem0;
         TH_STRUCT_P6 params[NR_THREADS_P3];
         pthread_t tids[NR_THREADS_P3+1]; //fol aceeasi structura chiar daca initial am declarat-o cu gandul sa o fol doar pt prima prob
-        if(sem_init(&sem0, 0, 4) != 0) {
+                if(sem_init(&sem0, 0, 4) != 0) {
+                 perror("Could not init the semaphore");
+                return -1;
+                }
+                if(sem_init(&sem3_15, 0, 3) != 0) { //asteapta 3 sem_posturi ca sa inchida th 15
+                 perror("Could not init the semaphore");
+                return -1;
+                }
+                if(sem_init(&sem3_inceput, 0, 1) != 0) { //prima data nu asteapta nimic
+                 perror("Could not init the semaphore");
+                return -1;
+                }
+                if(sem_init(&sem_fin, 0, 0) != 0) { //prima data nu asteapta nimic
                  perror("Could not init the semaphore");
                 return -1;
                 }
@@ -224,6 +279,10 @@ int main(){
                 for(int i=0; i<NR_THREADS_P3; i++) {
                 pthread_join(tids[i], NULL);
                 }
+                 sem_destroy(&sem0);
+                  sem_destroy(&sem3_15);
+                   sem_destroy(&sem3_inceput);
+                   sem_destroy(&sem_fin);
     info(BEGIN, 3, 0);
     
     info(END, 3, 0);
