@@ -24,12 +24,10 @@ sem_t *sem68_4;
 sem_t *sem86_24;
 //semafor pt a treia cerinta , cu nr permisiuni 3 astfel incat sa putem inchide threadul 15 cand 4 semafoare , cu tot cu el ruleaza
 sem_t sem3_15;
-int inceput=0;
-int count=0;
-sem_t sem3_inceput;
+int inceput=0; //se pune pe 1 cand th 15 a pornit
+int contor=0;
+sem_t sem3_inceput; //folosit pt a seta inceput si a proba daca este pe 1 sau nu , in caz ca este se asteapta inchiderea lui th 15
 sem_t sem_fin;
-sem_t sem3_nou;
-sem_t sem_pornit; //trebuie sa ne asiguram ca primeste macar 3 posturi
 
 //pt prob 2
 void *threadFn(void *unused)
@@ -78,88 +76,42 @@ void *threadFn(void *unused)
 void *threadFn2(void *unused)
 {
     TH_STRUCT_P6 *s = (TH_STRUCT_P6*)unused;
-         
-            sem_wait(s->sem0); //asigura ca nu exista mai mult de 4 threaduri pornite 
-           
-           
+            sem_wait(s->sem0);
             if(s->ID!=15){
-                 info(BEGIN, 3, s->ID);
-                sem_post(&sem_pornit);
-                 sem_wait(&sem3_inceput); //pt var globala inceput
-                if(inceput==0) sem_wait(&sem_fin); //are 34 de permisiuni deci daca sa zicem ca th 15 nu a pornit inca , il obliga sa porneasca ca sa se poata continua
-                sem_post(&sem3_inceput);
+            
+           
+            info(BEGIN, 3, s->ID);
+            sem_wait(&sem3_inceput);
+            if(inceput==1){sem_post(&sem3_15);
+            sem_wait(&sem_fin);
+            info(END, 3, s->ID);
+            
+            sem_post(s->sem0);
+            }else
+            {info(END, 3, s->ID);
+            
+            sem_post(s->sem0);
+            }
+            sem_post(&sem3_inceput);
+            
             }
             if(s->ID==15){
             info(BEGIN, 3, s->ID);
-            
             sem_wait(&sem3_inceput);
             inceput=1;
-            sem_post(&sem_fin); // cazurile pt th 15 pornit impreuna cu ultimele 3 threaduri
-            sem_post(&sem_fin);
-            sem_post(&sem_fin);
-
             sem_post(&sem3_inceput);
-           
-           
+            sem_wait(&sem3_15);
+            info(END, 3, s->ID);
             
-            
-           
-
-            
-
-          
+            sem_post(&sem_fin);
+             sem_post(&sem_fin);
+              sem_post(&sem_fin);
+              sem_wait(&sem3_inceput);
+            inceput=0;
+            sem_post(&sem3_inceput);
+            sem_post(s->sem0);
            //sem_post(&sem3_15);
             }
-            if(s->ID!=15){
-               
-                sem_wait(&sem3_inceput);
-                if(inceput==1) {
-                      
-                   sem_wait(&sem3_nou); //sem pt variabila count
-                    count++; 
-                    if(count<=3)  sem_wait(&sem3_15);//3 threaduri o sa fie oprite pana cand se termina 15
-                    else {
-                         info(END, 3, s->ID);
-                        sem_post(s->sem0);
-                    }
-                    sem_post(&sem3_nou);
-                   
-                   
-                }
-                
-                sem_post(&sem3_inceput);
-               
-                 
-            }
-            if(s->ID==15){
-
-                sem_wait(&sem_pornit);
-                sem_wait(&sem_pornit);
-                sem_wait(&sem_pornit); // se asigura ca exista 3 semafoare pornite , inainte sa se inchida 
-               sem_wait(&sem3_inceput);
-                 info(END, 3, s->ID);
-                 sem_post(s->sem0);
-            inceput=2; //se seteaza inceput pe 2 ca sa se poata printa direct finalul celorlalte threaduri de dupa 15
-            sem_post(&sem3_15); //deblocheaza celelalte semafoar ai sa se poata inchide 
-           sem_post(&sem3_15);
-           sem_post(&sem3_15);
-           
-            sem_post(&sem3_inceput);
-
-
-           
-            }
-            if(s->ID!=15){
-                 //printf("%d %d\n",count ,s->ID);
-                 sem_wait(&sem3_inceput);
-                 if(inceput==2||inceput==0) //daca s-a terminat th 15 sau daca nu a inceput dar inca mai sunt mai mult de 4 th ramase 
-                info(END, 3, s->ID);
-                sem_post(s->sem0);
-                sem_post(&sem3_inceput);
-                 
-            }
-           
-               //sem_post(s->sem0);
             return NULL;
 }
 //pt ultima problema , doar face 
@@ -190,7 +142,6 @@ int main(){
     pid_t P2=-1,P3=-1,P4=-1,P5=-1,P6=-1,P7=-1,P8=-1;
     int status1=0, status2=0, status3=0; // ca trebuie sa astepte maxim dupa 3 copii
     //pt sincronizare threaduri din acelasi proces
-    
          sem68_4 = sem_open("semafor_th4_proc68", O_CREAT, 0644, 0);
         
         sem86_24 = sem_open("semafor_th24_proc82", O_CREAT, 0644, 0);
@@ -218,7 +169,7 @@ int main(){
                 perror("Could not init the semaphore");
                 return -1;
                 }
-                if(sem_init(&sem0, 0, 4) != 0) {
+                if(sem_init(&sem0, 0, 3) != 0) {
                  perror("Could not init the semaphore");
                 return -1;
                 }
@@ -302,7 +253,7 @@ int main(){
                  perror("Could not init the semaphore");
                 return -1;
                 }
-                if(sem_init(&sem3_15, 0, 0) != 0) { //asteapta 3 sem_posturi ca sa inchida th 15
+                if(sem_init(&sem3_15, 0, 3) != 0) { //asteapta 3 sem_posturi ca sa inchida th 15
                  perror("Could not init the semaphore");
                 return -1;
                 }
@@ -310,15 +261,7 @@ int main(){
                  perror("Could not init the semaphore");
                 return -1;
                 }
-                if(sem_init(&sem_fin, 0, 34) != 0) { //prima data nu asteapta nimic
-                 perror("Could not init the semaphore");
-                return -1;
-                }
-                if(sem_init(&sem3_nou, 0, 1) != 0) { //prima data nu asteapta nimic
-                 perror("Could not init the semaphore");
-                return -1;
-                }
-                if(sem_init(&sem_pornit, 0, 0) != 0) { //asteapta 3 sem_posturi ca sa inchida th 15
+                if(sem_init(&sem_fin, 0, 0) != 0) { //prima data nu asteapta nimic
                  perror("Could not init the semaphore");
                 return -1;
                 }
@@ -333,7 +276,6 @@ int main(){
                      pthread_create(&tids[i], NULL, threadFn2, &params[i]);
                     
                 }
-               
                 for(int i=0; i<NR_THREADS_P3; i++) {
                 pthread_join(tids[i], NULL);
                 }
@@ -341,7 +283,6 @@ int main(){
                   sem_destroy(&sem3_15);
                    sem_destroy(&sem3_inceput);
                    sem_destroy(&sem_fin);
-                   sem_destroy(&sem3_nou);
     info(BEGIN, 3, 0);
     
     info(END, 3, 0);
