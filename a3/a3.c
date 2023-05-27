@@ -15,6 +15,10 @@
 //declarata globala , pt a nu fii nevoie sa fie transmisa ca parametru pentru mai multe functii si dintr-o fctie in alta 
 int shmFd=-1;
  volatile char *sharedData = NULL;
+ //
+  char *data = NULL;
+   int fd=-1;
+    off_t size;
 
 //int fd_w=-1;
 void ping(int fd_w){
@@ -56,11 +60,11 @@ void shm_create(int fd_w,unsigned int dim){
 
 void map_file(int fd_w,char *path){
 //pr 1 lab12
-    int fd;
+   
      printf("\n%s\n",path);
     int ok=1;
-    off_t size;
-    char *data = NULL;
+   
+   
     fd = open(path, O_RDONLY);
     if(fd == -1) {
         ok=0;
@@ -118,6 +122,43 @@ void write_sh(int fd_w,unsigned int offset,unsigned int value){
     }
     else write(fd_w,&er,strlen(er));
     
+}
+
+void read_offset(int fd_w,unsigned int offset,unsigned int no_bytes){
+    int ok=1;
+    if(fd == -1) {
+        ok=0;
+        perror("Could not open input file");
+        //return 1;
+    }
+    if(data == (void*)-1) {
+        ok=0;
+        perror("Could not map file");
+        close(fd);
+        //return 1;
+    }
+    if(offset>size||offset<0||(offset+4)>size){
+        ok=0;
+        perror("Invalid offset");
+    }
+    char read_offset[]="READ_FROM_FILE_OFFSET$";
+    char suc[]="SUCCESS$";
+    char er[]="ERROR$";
+    write(fd_w,&read_offset,strlen(read_offset));
+    if(ok==1){
+    for (int i = 0; i < no_bytes; i++)
+    {
+        sharedData[i] = data[i + offset];
+    }
+        //strncpy((char*)(sharedData+offset),string_value,4);
+        write(fd_w,&suc,strlen(suc));
+
+    }
+    else{
+          write(fd_w,&er,strlen(er));
+    }
+
+
 }
 
 int main(void)
@@ -198,10 +239,11 @@ int main(void)
         write_sh(fd_w,offset,value);
     }
     if(strcmp(request,"READ_FROM_FILE_OFFSET")==0){
-        close(fd_r);
-        close(fd_w);
-        unlink(FIFO_RESP);
-        break;
+        unsigned int offset,no_bytes;
+        printf("\nhere\n");
+        read(fd_r,&offset,sizeof(unsigned int));
+        read(fd_r,&no_bytes,sizeof(unsigned int));
+        read_offset(fd_w,offset,no_bytes);
     }
     if(strcmp(request,"READ_FROM_FILE_SECTION")==0){
         close(fd_r);
